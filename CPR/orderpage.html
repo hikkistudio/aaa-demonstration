@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Order Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Helvetica, Arial, sans-serif;
+            background: #ffffff;
+        }
+
+        .layout {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* LEFT: LIGHTBOX */
+        .lightbox-column {
+            flex: 3;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 40px 0;
+        }
+
+        .lightbox-image-wrapper {
+            max-width: 70%;
+            max-height: 80%;
+        }
+
+        .lightbox-image-wrapper img {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: pointer;
+        }
+
+        .swipe-hint {
+            position: absolute;
+            top: 30px;
+            color: #ffffff;
+            font-size: 24px;
+            text-align: center;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        /* MIDDLE: PRODUCTS */
+        .products-column {
+            flex: 2;
+            background: #ffffff;
+            padding: 40px 30px;
+        }
+
+        .product-item {
+            margin-bottom: 40px;
+        }
+
+        .product-button {
+            display: inline-block;
+            background: #000000;
+            color: #ffffff;
+            padding: 18px 40px;
+            font-size: 24px;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .product-button:hover {
+            background: #333333;
+        }
+
+        .product-button.selected {
+            background: #23a33a;
+            /* 綠色反白 */
+            color: #ffffff;
+        }
+
+        .product-price {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #000000;
+        }
+
+        .product-hint {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #666666;
+        }
+
+        /* RIGHT: BASKET */
+        .basket-column {
+            flex: 2;
+            border-left: 4px solid #000000;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .basket-title {
+            font-size: 40px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .basket-list {
+            flex: 1;
+        }
+
+        .basket-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .basket-qty {
+            width: 30px;
+            text-align: right;
+            margin-right: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .basket-product-label {
+            background: #000000;
+            color: #ffffff;
+            padding: 8px 16px;
+            font-size: 18px;
+        }
+
+        .basket-remove {
+            margin-left: 10px;
+            background: #ff0000;
+            color: #ffffff;
+            border: none;
+            padding: 4px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .basket-remove:hover {
+            background: #cc0000;
+        }
+
+        /* Total + checkout box */
+        .basket-footer {
+            margin-top: 30px;
+        }
+
+        .total-box {
+            background: #e6e043;
+            /* 黃色 */
+            padding: 20px;
+            display: inline-block;
+            min-width: 220px;
+        }
+
+        .total-text {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #000000;
+        }
+
+        .total-amount {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #000000;
+        }
+
+        .checkout-link {
+            font-size: 22px;
+            color: #ff0000;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .checkout-link:hover {
+            text-decoration: underline;
+        }
+
+        /* MODAL for Product 3 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9990;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-window {
+            background: #ffffff;
+            padding: 25px 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .modal-field {
+            margin-bottom: 12px;
+        }
+
+        .modal-field label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .modal-field input {
+            width: 100%;
+            padding: 6px 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+        }
+
+        .modal-buttons {
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .modal-buttons button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .modal-confirm {
+            background: #23a33a;
+            color: #ffffff;
+        }
+
+        .modal-cancel {
+            background: #cccccc;
+            color: #000000;
+        }
+
+        @media (max-width: 980px) {
+            .layout {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .lightbox-column,
+            .products-column,
+            .basket-column {
+                height: auto;
+                min-height: 300px;
+            }
+
+            .basket-column {
+                border-left: none;
+                border-top: 4px solid #000;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout">
+
+        <!-- LEFT: LIGHTBOX -->
+        <div class="lightbox-column">
+            <div class="swipe-hint">Swipe / click to change photo</div>
+
+            <div class="lightbox-image-wrapper">
+                <img id="lightboxImage" src="" alt="Photo">
+            </div>
+        </div>
+
+        <!-- MIDDLE: PRODUCTS -->
+        <div class="products-column">
+            <div class="product-item">
+                <button class="product-button" data-product-id="p1" data-name="Fridge magnet" data-price="40">
+                    Fridge Magnet
+                </button>
+                <div class="product-price">
+                    <!-- e.g. $40.00 -->
+                </div>
+            </div>
+
+            <div class="product-item">
+                <button class="product-button" data-product-id="p2" data-name="8X10" data-price="25">
+                    8X10 photo
+                </button>
+                <div class="product-price">
+                    <!-- e.g. $25.00 -->
+                </div>
+            </div>
+
+            <div class="product-item">
+                <button class="product-button" data-product-id="p3" data-name="Trader card" data-price="35">
+                    Trader card
+                </button>
+                <div class="product-price">
+                    <!-- e.g. $35.00 -->
+                </div>
+                <div class="product-hint">
+                    * This product requires your personal information (height, weight, coach, age).
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: BASKET -->
+        <div class="basket-column">
+            <div class="basket-title">Basket</div>
+
+            <div id="basketList" class="basket-list">
+                <!-- Basket items will appear here -->
+            </div>
+
+            <div class="basket-footer">
+                <div class="total-box">
+                    <div class="total-text">Your total:</div>
+                    <div id="totalAmount" class="total-amount">0.00</div>
+                    <a class="checkout-link" onclick="checkout()">Checkout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL for Product 3 -->
+    <div id="p3Modal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-title">Personal Information</div>
+
+            <div class="modal-field">
+                <label for="p3Height">Height</label>
+                <input id="p3Height" type="text" placeholder="e.g. 170 cm">
+            </div>
+
+            <div class="modal-field">
+                <label for="p3Weight">Weight</label>
+                <input id="p3Weight" type="text" placeholder="e.g. 65 kg">
+            </div>
+
+            <div class="modal-field">
+                <label for="p3Coach">Coach</label>
+                <input id="p3Coach" type="text" placeholder="Coach name">
+            </div>
+
+            <div class="modal-field">
+                <label for="p3Age">Age</label>
+                <input id="p3Age" type="text" placeholder="e.g. 10">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-cancel" id="p3CancelBtn">Cancel</button>
+                <button class="modal-confirm" id="p3ConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================
+        // LIGHTBOX I forgot to copy files home will fill it in tmr
+        // ================
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get('pid') || '00001';
+
+        const galleries = {
+            '00001': [
+                'images/00001_1.jpeg',
+                'images/00001_2.jpeg',
+                'images/00001_3.jpeg',
+                'images/00001_4.jpeg',
+                'images/00001_5.jpeg',
+                'images/00001_6.jpeg'
+            ],
+            '00002': [
+                'images/00002_1.jpeg',
+                'images/00002_2.jpeg',
+                'images/00002_3.jpeg',
+                'images/00002_4.jpeg',
+                'images/00002_5.jpeg',
+                'images/00002_6.jpeg'
+            ]
+        };
+
+        const images = galleries[pid] && galleries[pid].length
+            ? galleries[pid]
+            : galleries['00001'];
+
+        let currentIndex = 0;
+        const lightboxImg = document.getElementById('lightboxImage');
+
+        function showCurrentImage() {
+            if (!images.length) return;
+            lightboxImg.src = images[currentIndex];
+        }
+
+        function goNextImage() {
+            if (!images.length) return;
+            currentIndex = (currentIndex + 1) % images.length;
+            showCurrentImage();
+        }
+
+        let slideshowTimer = setInterval(goNextImage, 3000);
+
+        lightboxImg.addEventListener('click', function () {
+            goNextImage();
+            clearInterval(slideshowTimer);
+            slideshowTimer = setInterval(goNextImage, 3000);
+        });
+
+        showCurrentImage();
+
+        // ================
+        // BASKET
+        // ================
+        const basket = {}; // productId -> { name, price, qty, details? }
+
+        function renderBasket() {
+            const basketList = document.getElementById('basketList');
+            basketList.innerHTML = '';
+
+            let total = 0;
+
+            Object.keys(basket).forEach(id => {
+                const item = basket[id];
+                if (item.qty <= 0) return;
+
+                const row = document.createElement('div');
+                row.className = 'basket-item';
+
+                const qtySpan = document.createElement('div');
+                qtySpan.className = 'basket-qty';
+                qtySpan.textContent = item.qty;
+
+                const label = document.createElement('div');
+                label.className = 'basket-product-label';
+                label.textContent = item.name;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'basket-remove';
+                removeBtn.textContent = 'X';
+                removeBtn.addEventListener('click', function () {
+                    basket[id].qty = 0;
+                    renderBasket();
+                });
+
+                row.appendChild(qtySpan);
+                row.appendChild(label);
+                row.appendChild(removeBtn);
+                basketList.appendChild(row);
+
+                total += item.price * item.qty;
+            });
+
+            document.getElementById('totalAmount').textContent = total.toFixed(2);
+        }
+
+        // CHANGED
+        function checkout() {
+            const total = document.getElementById('totalAmount').textContent || '0.00';
+            window.location.href = 'orderconfirmed.html?total=' + encodeURIComponent(total) + '&pid=' + encodeURIComponent(pid);
+        }
+
+
+        // ================
+        // FLYING ANIMATION
+        // ================
+        function animateToBasket(sourceEl) {
+            const sourceRect = sourceEl.getBoundingClientRect();
+            const basketRect = document.getElementById('basketList').getBoundingClientRect();
+
+            const clone = sourceEl.cloneNode(true);
+            clone.style.position = 'fixed';
+            clone.style.left = sourceRect.left + 'px';
+            clone.style.top = sourceRect.top + 'px';
+            clone.style.margin = '0';
+            clone.style.zIndex = '9999';
+            clone.style.pointerEvents = 'none';
+
+            document.body.appendChild(clone);
+
+            const deltaX = basketRect.left - sourceRect.left + 40;
+            const deltaY = basketRect.top - sourceRect.top + 40;
+
+            requestAnimationFrame(() => {
+                clone.style.transition =
+                    'transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1.1), opacity 0.9s';
+                clone.style.transform =
+                    'translate(' + deltaX + 'px,' + deltaY + 'px) scale(0.4) rotate(18deg)';
+                clone.style.opacity = '0.1';
+            });
+
+            clone.addEventListener('transitionend', () => {
+                clone.remove();
+            });
+        }
+
+        function addToBasket(id, name, price, sourceEl) {
+            if (!basket[id]) {
+                basket[id] = { name, price, qty: 0 };
+            }
+            basket[id].qty += 1;
+            renderBasket();
+            if (sourceEl) animateToBasket(sourceEl);
+        }
+
+        // ================
+        // PRODUCT BUTTONS
+        // ================
+        const productButtons = document.querySelectorAll('.product-button');
+        const p3Button = document.querySelector('[data-product-id="p3"]');
+
+        productButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const id = this.getAttribute('data-product-id');
+                const name = this.getAttribute('data-name');
+                const price = parseFloat(this.getAttribute('data-price')) || 0;
+
+                if (id === 'p3') {
+                    openP3Modal();
+                } else {
+                    addToBasket(id, name, price, this);
+                }
+            });
+        });
+
+        // ================
+        // PRODUCT 3 MODAL
+        // ================
+        const p3Modal = document.getElementById('p3Modal');
+        const p3ConfirmBtn = document.getElementById('p3ConfirmBtn');
+        const p3CancelBtn = document.getElementById('p3CancelBtn');
+
+        function openP3Modal() {
+            p3Modal.classList.add('show');
+        }
+
+        function closeP3Modal() {
+            p3Modal.classList.remove('show');
+        }
+
+        p3CancelBtn.addEventListener('click', function () {
+            closeP3Modal();
+        });
+
+        p3ConfirmBtn.addEventListener('click', function () {
+            const height = document.getElementById('p3Height').value.trim();
+            const weight = document.getElementById('p3Weight').value.trim();
+            const coach = document.getElementById('p3Coach').value.trim();
+            const age = document.getElementById('p3Age').value.trim();
+
+            // 可按需要加強驗證
+            if (!height || !weight || !coach || !age) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+
+            const id = 'p3';
+            const name = p3Button.getAttribute('data-name');
+            const price = parseFloat(p3Button.getAttribute('data-price')) || 0;
+
+            if (!basket[id]) {
+                basket[id] = { name, price, qty: 0, details: {} };
+            }
+            basket[id].details = { height, weight, coach, age };
+
+            addToBasket(id, name, price, p3Button);
+            p3Button.classList.add('selected');
+            closeP3Modal();
+        });
+        p3Modal.addEventListener('click', function (e) {
+            if (e.target === p3Modal) {
+                closeP3Modal();
+            }
+        });
+    </script>
+</body>
+
+</html>
