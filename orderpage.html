@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Prints</title>
+
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: "Google Sans", system-ui, -apple-system, BlinkMacSystemFont,
+                     "Helvetica Neue", Arial, sans-serif;
+        background: #ffffff;
+        overflow-x: hidden;
+    }
+
+    /* ────────── FIXED TOP BAR ────────── */
+    .top-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: #000000; /* 黑色 */
+        color: #fff;
+        padding: 10px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10000;
+    }
+
+    .nav-button {
+        flex: 1;
+        text-align: center;
+        font-size: 18px;
+        cursor: pointer;
+        white-space: nowrap;
+        letter-spacing: 0.02em;
+    }
+    .nav-button:hover { text-decoration: underline; }
+
+    .logo-area {
+        flex: 1;
+        text-align: center;
+    }
+
+    .logo-img {
+        max-width: 260px;
+        width: 22vw;
+        min-width: 140px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
+    @media (max-width: 700px) {
+        .top-bar {
+            padding: 8px 10px;
+            flex-wrap: wrap;
+            row-gap: 6px;
+        }
+        .logo-area {
+            flex: 0 0 100%;
+            order: 0;
+        }
+        .logo-img {
+            width: 55vw;
+            max-width: 230px;
+            min-width: 140px;
+        }
+        .nav-button {
+            flex: 0 0 50%;
+            font-size: 14px;
+            margin-top: 2px;
+        }
+    }
+
+    /* ────────── MAIN LAYOUT ────────── */
+
+    .content-layout {
+        margin-top: 80px; /* Desktop：topbar 高度 */
+    }
+
+    .products-column {
+        padding: 26px 40px 36px;
+    }
+
+    /* Desktop 固定 basket：右側鎖定 */
+    .basket-column {
+        position: fixed;
+        top: 80px;              /* 剛好在 topbar 底下 */
+        right: 0;
+        width: min(340px, 32%);
+        height: calc(100vh - 80px);
+        overflow-y: auto;
+        background: #F1C338;
+        padding: 24px 22px 28px;
+        border-left: 4px solid #000;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 讓產品內容避開右側固定 basket */
+    @media (min-width: 901px) {
+        .products-column {
+            margin-right: min(360px, 34%);
+        }
+    }
+
+    /* Tablet / Mobile：正常直向排版 */
+    @media (max-width: 900px) {
+        .content-layout {
+            margin-top: 120px;  /* 手機多一點空隙，避免 topbar 與圖片緊貼 */
+        }
+        .products-column {
+            padding: 14px 10px 18px;
+            margin-right: 0;
+        }
+        .basket-column {
+            position: static;
+            width: 100%;
+            height: auto;
+            overflow: visible;
+            border-left: none;
+            border-top: 4px solid #000;
+            margin-top: 8px;
+        }
+    }
+
+    /* ────────── PRODUCT GRID ────────── */
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px 24px;  /* 已縮細 */
+    }
+
+    @media (max-width: 1100px) {
+        .products-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 700px) {
+        .products-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+    }
+
+    .product-card { cursor: pointer; }
+
+    .product-image-wrap {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .product-image-wrap img {
+        width: 100%;
+        transition: transform 0.3s ease;
+        display: block;
+    }
+
+    .product-card:hover .product-image-wrap img {
+        transform: scale(1.06);
+    }
+
+    .product-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .product-card:hover .product-overlay {
+        opacity: 1;
+    }
+
+    .product-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .product-desc {
+        font-size: 10px;
+        line-height: 1.35;
+    }
+
+    .info-required {
+        color: #0b6623;
+        font-weight: bold;
+    }
+
+    @media (max-width: 700px) {
+        .product-title { font-size: 15px; }
+        .product-desc  { font-size: 9.5px; }
+    }
+
+    /* ────────── BASKET ────────── */
+
+    .basket-title {
+        font-size: 36px;
+        font-weight: bold;
+        margin-bottom: 18px;
+    }
+
+    .basket-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .basket-qty {
+        width: 30px;
+        text-align: right;
+        margin-right: 8px;
+        font-size: 17px;
+        font-weight: bold;
+    }
+
+    .basket-product-label {
+        background: #000;
+        color: #fff;
+        padding: 5px 12px;
+        font-size: 15px;
+    }
+
+    .basket-remove {
+        margin-left: 7px;
+        background: #ff0000;
+        color: #fff;
+        border: none;
+        padding: 2px 8px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .total-text {
+        font-size: 24px;
+        margin-top: 16px;
+    }
+
+    .total-amount {
+        font-size: 34px;
+        font-weight: bold;
+        margin-bottom: 16px;
+    }
+
+    .photoid-note {
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    @media (max-width: 700px) {
+        .basket-title {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+        .basket-qty {
+            font-size: 14px;
+            width: 24px;
+        }
+        .basket-product-label {
+            font-size: 13px;
+            padding: 4px 10px;
+        }
+        .total-text {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        .total-amount {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+        .photoid-note {
+            font-size: 11px;
+        }
+    }
+
+    /* ────────── CHECKOUT ＋ EDIT INFO BUTTONS ────────── */
+
+    .checkout-button {
+        display: inline-block;
+        background: #000;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        padding: 16px 44px;
+        border: none;
+        cursor: pointer;
+        letter-spacing: 1px;
+        box-shadow: 4px 4px 0 rgba(0,0,0,0.45);
+        transition: 0.2s;
+        margin-right: 8px;
+    }
+
+    .checkout-button:hover {
+        background: #222;
+        transform: translateY(-2px);
+        box-shadow: 6px 6px 0 rgba(0,0,0,0.45);
+    }
+
+    .editinfo-button {
+        display: inline-block;
+        background: transparent;
+        border: 1px solid #000;
+        padding: 8px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        margin-top: 8px;
+    }
+
+    .editinfo-button:hover {
+        background: rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 700px) {
+        .checkout-button {
+            font-size: 19px;
+            padding: 11px 28px;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.45);
+        }
+        .editinfo-button {
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+    }
+
+    /* ────────── MODAL ────────── */
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9990;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal-window {
+        background: #ffffff;
+        padding: 24px 28px;
+        max-width: 380px;
+        width: 90%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .modal-title {
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 12px;
+    }
+
+    .modal-field { margin-bottom: 10px; }
+    .modal-field label { font-size: 13px; display: block; }
+
+    .modal-field input {
+        width: 100%;
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+    }
+
+    .modal-buttons { text-align: right; margin-top: 12px; }
+    .modal-buttons button {
+        padding: 6px 12px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+    }
+    .modal-confirm { background: #23a33a; color: #fff; }
+    .modal-cancel  { background: #ccc; }
+
+</style>
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <div class="nav-button">Info</div>
+    <div class="nav-button">Gallery</div>
+
+    <div class="logo-area">
+        <img src="CPR-logo.png" class="logo-img" alt="CPR photography Vancouver">
+    </div>
+
+    <div class="nav-button">Order</div>
+    <div class="nav-button">ENG/中</div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="content-layout">
+
+    <!-- PRODUCTS -->
+    <div class="products-column">
+        <div class="products-grid">
+
+            <!-- Trader card -->
+            <div class="product-card"
+                 data-id="trader"
+                 data-name="Trader card"
+                 data-price="40"
+                 data-requires-info="true">
+                <div class="product-image-wrap">
+                    <img src="images/1.jpg" alt="Trader card">
+                    <div class="product-overlay"></div>
+                </div>
+                <div class="product-title">Trader card</div>
+                <div class="product-desc">
+                    Glossy paper<br>$40<br>
+                    <span class="info-required">*Info required</span>
+                </div>
+            </div>
+
+            <!-- 5x7 -->
+            <div class="product-card"
+                 data-id="5x7"
+                 data-name="5x7"
+                 data-price="30">
+                <div class="product-image-wrap">
+                    <img src="images/2.jpg" alt="5x7">
+                    <div class="product-overlay"></div>
+                </div>
+                <div class="product-title">5x7</div>
+                <div class="product-desc">
+                    Glossy paper<br>$30
+                </div>
+            </div>
+
+            <!-- 8x10 -->
+            <div class="product-card"
+                 data-id="8x10"
+                 data-name="8x10"
+                 data-price="30">
+                <div class="product-image-wrap">
+                    <img src="images/3.jpg" alt="8x10">
+                    <div class="product-overlay"></div>
+                </div>
+                <div class="product-title">8x10</div>
+                <div class="product-desc">
+                    Glossy paper<br>$30
+                </div>
+            </div>
+
+            <!-- Team photo -->
+            <div class="product-card"
+                 data-id="team"
+                 data-name="Team photo"
+                 data-price="50">
+                <div class="product-image-wrap">
+                    <img src="images/4.jpg" alt="Team photo">
+                    <div class="product-overlay"></div>
+                </div>
+                <div class="product-title">Team photo</div>
+                <div class="product-desc">
+                    Glossy paper<br>$50
+                </div>
+            </div>
+
+            <!-- ID card -->
+            <div class="product-card"
+                 data-id="idcard"
+                 data-name="ID card"
+                 data-price="70"
+                 data-requires-info="true">
+                <div class="product-image-wrap">
+                    <img src="images/5.jpg" alt="ID card">
+                    <div class="product-overlay"></div>
+                </div>
+                <div class="product-title">ID card</div>
+                <div class="product-desc">
+                    PVC 3x2<br>$70<br>
+                    <span class="info-required">*Info required</span>
+                </div>
+            </div>
+
+            <!-- Wallet -->
+            <div class="product-card"
+                 data-id="wallet"
+                 data-name="Wallet"
+                 data-price="20">
+                <div class="product-image-wrap">
+                    <img src="images/6.jpg" alt="Wallet">
+                    <div class="product-overlay"></div>
+                </div>
+                <div class="product-title">Wallet</div>
+                <div class="product-desc">
+                    Glossy<br>$20
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- BASKET（固定於右側：Desktop） -->
+    <div class="basket-column">
+        <div class="basket-title">Basket</div>
+        <div id="basketList"></div>
+
+        <div class="total-text">Your total:</div>
+        <div id="totalAmount" class="total-amount">0.00</div>
+
+        <button class="checkout-button" onclick="checkout()">Checkout ›››</button>
+        <button class="editinfo-button" onclick="openEditInfo()">Edit info</button>
+
+        <div id="photoIdNote" class="photoid-note"></div>
+    </div>
+
+</div>
+
+<!-- INFO MODAL -->
+<div id="infoModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-title">Player info</div>
+
+        <div class="modal-field">
+            <label for="mh">Height</label>
+            <input id="mh" type="text">
+        </div>
+        <div class="modal-field">
+            <label for="mw">Weight</label>
+            <input id="mw" type="text">
+        </div>
+        <div class="modal-field">
+            <label for="mc">Coach</label>
+            <input id="mc" type="text">
+        </div>
+        <div class="modal-field">
+            <label for="ma">Age</label>
+            <input id="ma" type="text">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+            <button class="modal-confirm" onclick="confirmInfo()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("pid") || "000000";
+    document.getElementById("photoIdNote").textContent = "Photo ID: " + pid;
+
+    const basket = {};
+    let sharedInfo = null;   // 儲存第一次填寫的個人資料
+    let pending = null;      // add 模式用：記住準備加入的商品
+    let modalMode = null;    // 'add' 或 'edit'
+
+    function renderBasket() {
+        const box = document.getElementById("basketList");
+        box.innerHTML = "";
+        let total = 0;
+
+        for (const id in basket) {
+            const item = basket[id];
+            if (item.qty <= 0) continue;
+            total += item.qty * item.price;
+
+            const row = document.createElement("div");
+            row.className = "basket-item";
+            row.innerHTML = `
+                <div class="basket-qty">${item.qty}</div>
+                <div class="basket-product-label">${item.name}</div>
+                <button class="basket-remove" onclick="removeItem('${id}')">X</button>
+            `;
+            box.appendChild(row);
+        }
+        document.getElementById("totalAmount").textContent = total.toFixed(2);
+    }
+
+    function removeItem(id) {
+        basket[id].qty = 0;
+        renderBasket();
+    }
+
+    function animateTitleToBasket(titleEl) {
+        const rect = titleEl.getBoundingClientRect();
+        const bucket = document.getElementById("basketList").getBoundingClientRect();
+
+        const clone = titleEl.cloneNode(true);
+        clone.style.position = "fixed";
+        clone.style.left = rect.left + "px";
+        clone.style.top = rect.top + "px";
+        clone.style.background = "#000";
+        clone.style.color = "#fff";
+        clone.style.zIndex = "9999";
+        clone.style.padding = "4px 10px";
+
+        document.body.appendChild(clone);
+
+        const dx = bucket.left - rect.left + 40;
+        const dy = bucket.top - rect.top + 40;
+
+        requestAnimationFrame(() => {
+            clone.style.transition = "0.8s ease-in-out";
+            clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.4) rotate(15deg)`;
+            clone.style.opacity = "0";
+        });
+
+        clone.addEventListener("transitionend", () => clone.remove());
+    }
+
+    function addToBasket(id, name, price, titleEl, extra) {
+        if (!basket[id]) basket[id] = { name, price, qty: 0, extra: {} };
+        basket[id].qty += 1;
+        if (extra) basket[id].extra = extra; // demo 中暫時不顯示，只存起來
+
+        renderBasket();
+        animateTitleToBasket(titleEl);
+    }
+
+    // 產品點擊
+    document.querySelectorAll(".product-card").forEach(card => {
+        card.onclick = () => {
+            const id = card.dataset.id;
+            const name = card.dataset.name;
+            const price = Number(card.dataset.price);
+            const title = card.querySelector(".product-title");
+            const requiresInfo = card.dataset.requiresInfo === "true";
+
+            if (requiresInfo) {
+                // 如已經填過一次 info，就直接用同一組資料
+                if (sharedInfo) {
+                    addToBasket(id, name, price, title, sharedInfo);
+                } else {
+                    // 第一次：進入 add 模式
+                    pending = { id, name, price, title };
+                    modalMode = "add";
+                    openModalWith(sharedInfo); // 空白
+                }
+            } else {
+                addToBasket(id, name, price, title);
+            }
+        };
+    });
+
+    /* ────────── MODAL 控制 ────────── */
+
+    function openModalWith(info) {
+        // 若有 info（edit 模式），預先填好
+        document.getElementById("mh").value = info?.height || "";
+        document.getElementById("mw").value = info?.weight || "";
+        document.getElementById("mc").value = info?.coach  || "";
+        document.getElementById("ma").value = info?.age    || "";
+        document.getElementById("infoModal").classList.add("show");
+    }
+
+    function openModal() {
+        openModalWith(sharedInfo);
+    }
+
+    function closeModal() {
+        document.getElementById("infoModal").classList.remove("show");
+        pending = null;
+        modalMode = null;
+    }
+
+    // Edit info 按鈕：只修改 sharedInfo，不加商品
+    function openEditInfo() {
+        modalMode = "edit";
+        pending = null;
+        openModalWith(sharedInfo);
+    }
+
+    function confirmInfo() {
+        const h = document.getElementById("mh").value.trim();
+        const w = document.getElementById("mw").value.trim();
+        const c = document.getElementById("mc").value.trim();
+        const a = document.getElementById("ma").value.trim();
+
+        if (!h || !w || !c || !a) {
+            alert("Please fill all fields.");
+            return;
+        }
+
+        const info = { height: h, weight: w, coach: c, age: a };
+        sharedInfo = info;  // 不論 add 或 edit，都更新全局 sharedInfo
+
+        if (modalMode === "add" && pending) {
+            // 第一次填寫：同時加商品一次
+            addToBasket(pending.id, pending.name, pending.price, pending.title, info);
+        }
+        // 若是 edit 模式，就只更新 sharedInfo，不動 basket 內容
+
+        closeModal();
+    }
+
+    /* Checkout：帶 pid & total 至第三頁 */
+    function checkout() {
+        const total = document.getElementById("totalAmount").textContent || "0.00";
+        window.location.href =
+            `page3.html?pid=${encodeURIComponent(pid)}&total=${encodeURIComponent(total)}`;
+    }
+</script>
+
+</body>
+</html>
